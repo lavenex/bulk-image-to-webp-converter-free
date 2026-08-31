@@ -1,5 +1,5 @@
 === Bulk Image to WebP Converter ===
-Contributors: project01
+Contributors: lavenex
 Tags: webp, image converter, image optimization, bulk conversion
 Requires at least: 6.4
 Tested up to: 7.1
