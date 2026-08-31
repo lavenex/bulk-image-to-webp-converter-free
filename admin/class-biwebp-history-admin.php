@@ -110,11 +110,17 @@ class BIWEBP_History_Admin {
 							<tbody>
 							<?php foreach ( $rows as $row ) :
 								$change = $row['source_bytes'] > 0 ? round( ( 1 - $row['output_bytes'] / $row['source_bytes'] ) * 100 ) : null;
+								/* translators: %d: Source Media Library attachment ID. */
+								$source_label = sprintf( __( 'Media #%d', 'bulk-image-to-webp-converter' ), $row['source_id'] );
+								/* translators: %d: Percentage size reduction. */
+								$smaller_label = sprintf( __( '%d%% smaller', 'bulk-image-to-webp-converter' ), $change );
+								/* translators: %d: Percentage size increase. */
+								$larger_label = sprintf( __( '%d%% larger', 'bulk-image-to-webp-converter' ), abs( $change ) );
 								?>
 								<tr>
 									<td><div class="biwebp-history-file"><?php echo wp_kses_post( wp_get_attachment_image( $row['id'], array( 56, 56 ), false, array( 'alt' => '' ) ) ); ?><div><strong><?php echo esc_html( $row['filename'] ); ?></strong><small><?php echo esc_html( size_format( $row['output_bytes'] ) ); ?></small></div></div></td>
-									<td><?php echo $row['source_id'] ? '<a href="' . esc_url( get_edit_post_link( $row['source_id'], 'raw' ) ) . '">' . esc_html( sprintf( __( 'Media #%d', 'bulk-image-to-webp-converter' ), $row['source_id'] ) ) . '</a>' : esc_html__( 'Local upload', 'bulk-image-to-webp-converter' ); ?><small><?php echo $row['source_bytes'] ? esc_html( size_format( $row['source_bytes'] ) ) : esc_html__( 'Source size unavailable', 'bulk-image-to-webp-converter' ); ?></small></td>
-									<td><?php echo null === $change ? esc_html__( 'Not measured', 'bulk-image-to-webp-converter' ) : esc_html( $change >= 0 ? sprintf( __( '%d%% smaller', 'bulk-image-to-webp-converter' ), $change ) : sprintf( __( '%d%% larger', 'bulk-image-to-webp-converter' ), abs( $change ) ) ); ?></td>
+									<td><?php echo $row['source_id'] ? '<a href="' . esc_url( get_edit_post_link( $row['source_id'], 'raw' ) ) . '">' . esc_html( $source_label ) . '</a>' : esc_html__( 'Local upload', 'bulk-image-to-webp-converter' ); ?><small><?php echo $row['source_bytes'] ? esc_html( size_format( $row['source_bytes'] ) ) : esc_html__( 'Source size unavailable', 'bulk-image-to-webp-converter' ); ?></small></td>
+									<td><?php echo null === $change ? esc_html__( 'Not measured', 'bulk-image-to-webp-converter' ) : esc_html( $change >= 0 ? $smaller_label : $larger_label ); ?></td>
 									<td><?php echo esc_html( $row['quality'] ? $row['quality'] . '%' : '—' ); ?></td>
 									<td><?php echo esc_html( $row['date'] ); ?></td>
 									<td><a class="button button-small" href="<?php echo esc_url( get_edit_post_link( $row['id'], 'raw' ) ); ?>"><?php echo esc_html__( 'View in Media Library', 'bulk-image-to-webp-converter' ); ?></a></td>
