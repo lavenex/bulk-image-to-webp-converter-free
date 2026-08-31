@@ -50,6 +50,7 @@ class BIWEBP_Validator {
 		$max_bytes = $this->max_bytes( $is_pro );
 		if ( $size <= 0 || $size > $max_bytes ) {
 			$limit = function_exists( 'size_format' ) ? size_format( $max_bytes ) : (string) $max_bytes . ' bytes';
+			/* translators: %s: Formatted maximum generated WebP size. */
 			return new WP_Error( 'biwebp_invalid_size', sprintf( __( 'The generated WebP is empty or larger than %s.', 'bulk-image-to-webp-converter' ), $limit ) );
 		}
 
