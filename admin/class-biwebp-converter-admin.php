@@ -98,7 +98,7 @@ class BIWEBP_Admin {
 			<div class="biwebp-usage" aria-live="polite">
 				<strong><?php echo esc_html( $is_pro ? __( 'Pro conversions', 'bulk-image-to-webp-converter' ) : __( 'Free conversions', 'bulk-image-to-webp-converter' ) ); ?></strong>
 				<span id="biwebp-usage-count"><?php echo esc_html__( 'Unlimited', 'bulk-image-to-webp-converter' ); ?></span>
-				<span id="biwebp-remaining"><?php echo esc_html( sprintf( __( 'Process up to %d images per safe batch', 'bulk-image-to-webp-converter' ), $this->usage->batch_limit() ) ); ?></span>
+				<span id="biwebp-remaining"><?php /* translators: %d: Maximum images allowed in one safety batch. */ echo esc_html( sprintf( __( 'Process up to %d images per safe batch', 'bulk-image-to-webp-converter' ), $this->usage->batch_limit() ) ); ?></span>
 			</div>
 			<?php if ( ! $is_pro ) : ?>
 				<section class="biwebp-pro-offer" id="biwebp-pro-upgrade" aria-labelledby="biwebp-pro-offer-title">
@@ -125,7 +125,7 @@ class BIWEBP_Admin {
 					<label class="biwebp-dropzone" for="biwebp-files">
 						<span class="dashicons dashicons-upload" aria-hidden="true"></span>
 						<strong><?php echo esc_html__( 'Choose images', 'bulk-image-to-webp-converter' ); ?></strong>
-						<span id="biwebp-file-help"><?php echo esc_html( sprintf( __( 'PNG or JPG/JPEG · maximum %s per image · no fixed pixel-dimension limit', 'bulk-image-to-webp-converter' ), $max_label ) ); ?></span>
+						<span id="biwebp-file-help"><?php /* translators: %s: Effective maximum upload size. */ echo esc_html( sprintf( __( 'PNG or JPG/JPEG · maximum %s per image · no fixed pixel-dimension limit', 'bulk-image-to-webp-converter' ), $max_label ) ); ?></span>
 					</label>
 					<div class="biwebp-impact" id="biwebp-impact" aria-live="polite" aria-atomic="true">
 						<span class="biwebp-impact-label"><?php echo esc_html__( 'Estimated image speed impact', 'bulk-image-to-webp-converter' ); ?></span>
@@ -142,7 +142,7 @@ class BIWEBP_Admin {
 				</div>
 				<input id="biwebp-files" type="file" accept="image/png,image/jpeg,.png,.jpg,.jpeg" aria-describedby="biwebp-file-help" multiple>
 				<?php if ( $host_constrained ) : ?>
-					<p class="biwebp-host-limit-notice" role="status"><?php echo esc_html( sprintf( __( 'This WordPress host currently allows %1$s per upload, so that lower server limit applies. Your plan supports up to %2$s per image.', 'bulk-image-to-webp-converter' ), $max_label, $plan_max_label ) ); ?></p>
+					<p class="biwebp-host-limit-notice" role="status"><?php /* translators: 1: Host upload limit. 2: Plan upload limit. */ echo esc_html( sprintf( __( 'This WordPress host currently allows %1$s per upload, so that lower server limit applies. Your plan supports up to %2$s per image.', 'bulk-image-to-webp-converter' ), $max_label, $plan_max_label ) ); ?></p>
 				<?php endif; ?>
 				<div class="biwebp-source-actions">
 					<button type="button" class="button" id="biwebp-media-library"><?php echo esc_html__( 'Choose from Media Library', 'bulk-image-to-webp-converter' ); ?></button>
@@ -281,8 +281,10 @@ class BIWEBP_Admin {
 
 		check_ajax_referer( 'biwebp_convert', 'nonce' );
 
-		$is_pro    = $this->usage->is_pro();
-		$job_key   = isset( $_POST['jobKey'] ) ? $this->idempotency->normalize_key( wp_unslash( $_POST['jobKey'] ) ) : '';
+		$is_pro = $this->usage->is_pro();
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- normalize_key() sanitizes and validates this identifier against a strict allowlist.
+		$raw_job_key = isset( $_POST['jobKey'] ) ? wp_unslash( $_POST['jobKey'] ) : '';
+		$job_key     = $this->idempotency->normalize_key( $raw_job_key );
 		if ( '' === $job_key ) {
 			wp_send_json_error( array( 'message' => __( 'The queue job identifier is invalid. Refresh the page and retry.', 'bulk-image-to-webp-converter' ) ), 400 );
 		}
@@ -298,7 +300,8 @@ class BIWEBP_Admin {
 			wp_send_json_error( array( 'message' => __( 'This queue job is already processing in another tab. Retry shortly.', 'bulk-image-to-webp-converter' ) ), 409 );
 		}
 
-		$file      = isset( $_FILES['webp'] ) ? $_FILES['webp'] : array();
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- The upload array is validated for errors, size, signature, decoded MIME type, and dimensions before use.
+		$file      = isset( $_FILES['webp'] ) ? wp_unslash( $_FILES['webp'] ) : array();
 		$validated = $this->validator->validate( $file, $is_pro );
 		if ( is_wp_error( $validated ) ) {
 			$this->idempotency->release( $job_key );
@@ -345,9 +348,14 @@ class BIWEBP_Admin {
 		$page     = isset( $_POST['page'] ) ? max( 1, absint( $_POST['page'] ) ) : 1;
 		$per_page = 25;
 		$offset   = ( $page - 1 ) * $per_page;
-		$where    = "p.post_type = 'attachment' AND p.post_status = 'inherit' AND p.post_mime_type IN ('image/png','image/jpeg') AND NOT EXISTS (SELECT 1 FROM {$wpdb->postmeta} converted WHERE converted.meta_key = '_biwebp_source_attachment_id' AND CAST(converted.meta_value AS UNSIGNED) = p.ID)";
-		$total    = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->posts} p WHERE {$where}" ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- fixed query with core table names and no user data.
-		$ids      = $wpdb->get_col( $wpdb->prepare( "SELECT p.ID FROM {$wpdb->posts} p WHERE {$where} ORDER BY p.post_modified_gmt DESC, p.ID DESC LIMIT %d OFFSET %d", $per_page, $offset ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Only trusted WordPress core table names are interpolated; the query contains no user data.
+		$total_sql = "SELECT COUNT(*) FROM {$wpdb->posts} p WHERE p.post_type = 'attachment' AND p.post_status = 'inherit' AND p.post_mime_type IN ('image/png','image/jpeg') AND NOT EXISTS (SELECT 1 FROM {$wpdb->postmeta} converted WHERE converted.meta_key = '_biwebp_source_attachment_id' AND CAST(converted.meta_value AS UNSIGNED) = p.ID)";
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- This admin-only Media Library scan requires fresh results and excludes already converted sources.
+		$total = (int) $wpdb->get_var( $total_sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Fixed query assembled above from trusted core table names only.
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Only trusted WordPress core table names are interpolated; all pagination values are prepared.
+		$ids_sql = $wpdb->prepare( "SELECT p.ID FROM {$wpdb->posts} p WHERE p.post_type = 'attachment' AND p.post_status = 'inherit' AND p.post_mime_type IN ('image/png','image/jpeg') AND NOT EXISTS (SELECT 1 FROM {$wpdb->postmeta} converted WHERE converted.meta_key = '_biwebp_source_attachment_id' AND CAST(converted.meta_value AS UNSIGNED) = p.ID) ORDER BY p.post_modified_gmt DESC, p.ID DESC LIMIT %d OFFSET %d", $per_page, $offset );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- This admin-only Media Library scan requires fresh results and excludes already converted sources.
+		$ids = $wpdb->get_col( $ids_sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Prepared query assembled immediately above.
 		$items    = array();
 		foreach ( $ids as $attachment_id ) {
 			$attachment_id = absint( $attachment_id );
@@ -394,6 +402,7 @@ class BIWEBP_Admin {
 			array( 'post_mime_type' => 'image/webp' )
 		);
 		if ( is_wp_error( $attachment_id ) ) {
+			/* translators: %s: WordPress Media Library error message. */
 			return new WP_Error( 'biwebp_media_save_failed', sprintf( __( 'The WebP was created but could not be saved to the Media Library: %s', 'bulk-image-to-webp-converter' ), $attachment_id->get_error_message() ) );
 		}
 
