@@ -612,11 +612,18 @@
 
   if (mediaButton && window.wp && window.wp.media) {
     mediaButton.addEventListener('click', function () {
-      const frame = window.wp.media({ title: 'Choose PNG or JPEG images', button: { text: 'Use selected images' }, library: { type: 'image' }, multiple: true });
+      const frame = window.wp.media({ title: 'Choose PNG or JPEG images', button: { text: 'Use selected images' }, library: { type: ['image/png', 'image/jpeg'] }, multiple: true });
       frame.on('select', async function () {
-        const eligibleAttachments = frame.state().get('selection').toJSON().filter(function (attachment) {
+        const selectedAttachments = frame.state().get('selection').toJSON();
+        const eligibleAttachments = selectedAttachments.filter(function (attachment) {
           return ['image/png', 'image/jpeg'].includes(attachment.mime);
         });
+        if (!eligibleAttachments.length) {
+          mediaQueue = [];
+          mediaSelection.textContent = '0 Media Library image(s) selected';
+          setMessage('Choose PNG or JPEG Media Library images. Existing WebP files are outputs and cannot be converted again.', true);
+          return;
+        }
         const allowedCount = availableSelectionCount();
         const attachments = eligibleAttachments.slice(0, allowedCount);
         mediaQueue = [];
