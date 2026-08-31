@@ -114,8 +114,7 @@ class BIWEBP_License_Admin {
 	public function handle_activate() {
 		$this->authorize( 'biwebp_license_activate' );
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- authorize() verifies the capability and action nonce before this read.
-		$raw_key = isset( $_POST['license_key'] ) ? wp_unslash( $_POST['license_key'] ) : '';
-		$key     = preg_replace( '/\s+/', '', sanitize_text_field( $raw_key ) );
+		$key = isset( $_POST['license_key'] ) ? preg_replace( '/\s+/', '', sanitize_text_field( wp_unslash( $_POST['license_key'] ) ) ) : '';
 		if ( '' === $key || strlen( $key ) > 256 ) {
 			$this->redirect_with_notice( 'error' );
 		}
