@@ -350,12 +350,12 @@ class BIWEBP_Admin {
 		$offset   = ( $page - 1 ) * $per_page;
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Only trusted WordPress core table names are interpolated; the query contains no user data.
 		$total_sql = "SELECT COUNT(*) FROM {$wpdb->posts} p WHERE p.post_type = 'attachment' AND p.post_status = 'inherit' AND p.post_mime_type IN ('image/png','image/jpeg') AND NOT EXISTS (SELECT 1 FROM {$wpdb->postmeta} converted WHERE converted.meta_key = '_biwebp_source_attachment_id' AND CAST(converted.meta_value AS UNSIGNED) = p.ID)";
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- This admin-only Media Library scan requires fresh results and excludes already converted sources.
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- This admin-only Media Library scan requires fresh results and excludes already converted sources.
 		$total = (int) $wpdb->get_var( $total_sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Fixed query assembled above from trusted core table names only.
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Only trusted WordPress core table names are interpolated; all pagination values are prepared.
 		$ids_sql = $wpdb->prepare( "SELECT p.ID FROM {$wpdb->posts} p WHERE p.post_type = 'attachment' AND p.post_status = 'inherit' AND p.post_mime_type IN ('image/png','image/jpeg') AND NOT EXISTS (SELECT 1 FROM {$wpdb->postmeta} converted WHERE converted.meta_key = '_biwebp_source_attachment_id' AND CAST(converted.meta_value AS UNSIGNED) = p.ID) ORDER BY p.post_modified_gmt DESC, p.ID DESC LIMIT %d OFFSET %d", $per_page, $offset );
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- This admin-only Media Library scan requires fresh results and excludes already converted sources.
 		$ids = $wpdb->get_col( $ids_sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Prepared query assembled immediately above.
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$items    = array();
 		foreach ( $ids as $attachment_id ) {
 			$attachment_id = absint( $attachment_id );
