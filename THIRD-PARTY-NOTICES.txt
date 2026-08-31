@@ -1,0 +1,4 @@
+No third-party conversion engine is bundled in version 0.8.0-alpha.
+
+WebP encoding uses the current administrator browser's built-in Canvas encoder.
+WordPress and browser components retain their respective upstream licenses.
