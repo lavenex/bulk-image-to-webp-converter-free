@@ -45,6 +45,7 @@ class BIWEBP_License_Admin {
 
 		$status              = $this->license->get_status();
 		$connector_available = $this->connector_available();
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only status flag produced after an authorized admin-post redirect.
 		$notice              = isset( $_GET['biwebp_notice'] ) ? sanitize_key( wp_unslash( $_GET['biwebp_notice'] ) ) : '';
 		$labels              = array(
 			'free'    => __( 'Free', 'bulk-image-to-webp-converter' ),
@@ -112,7 +113,9 @@ class BIWEBP_License_Admin {
 
 	public function handle_activate() {
 		$this->authorize( 'biwebp_license_activate' );
-		$key = isset( $_POST['license_key'] ) ? preg_replace( '/\s+/', '', sanitize_text_field( wp_unslash( $_POST['license_key'] ) ) ) : '';
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- authorize() verifies the capability and action nonce before this read.
+		$raw_key = isset( $_POST['license_key'] ) ? wp_unslash( $_POST['license_key'] ) : '';
+		$key     = preg_replace( '/\s+/', '', sanitize_text_field( $raw_key ) );
 		if ( '' === $key || strlen( $key ) > 256 ) {
 			$this->redirect_with_notice( 'error' );
 		}
