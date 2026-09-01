@@ -23,7 +23,6 @@ class BIWEBP_Admin {
 		add_action( 'admin_menu', array( $this, 'add_menu' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 		add_action( 'wp_ajax_biwebp_validate_conversion', array( $this, 'validate_conversion' ) );
-		add_action( 'wp_ajax_biwebp_scan_media', array( $this, 'scan_media' ) );
 	}
 
 	public function add_menu() {
@@ -47,24 +46,21 @@ class BIWEBP_Admin {
 		wp_enqueue_style( 'biwebp-admin', BIWEBP_URL . 'assets/css/webp-admin.css', array(), BIWEBP_VERSION );
 		wp_enqueue_script( 'biwebp-admin', BIWEBP_URL . 'assets/js/webp-admin.js', array( 'media-editor' ), BIWEBP_VERSION, true );
 
-		$is_pro         = $this->usage->is_pro();
-		$plan_max_bytes = $this->validator->plan_max_bytes( $is_pro );
+		$plan_max_bytes = $this->validator->plan_max_bytes();
 		$host_max_bytes = (int) wp_max_upload_size();
-		$max_bytes      = $this->validator->max_bytes( $is_pro );
+		$max_bytes      = $this->validator->max_bytes();
 		wp_localize_script(
 			'biwebp-admin',
 			'biwebpConfig',
 			array(
 				'ajaxUrl'    => admin_url( 'admin-ajax.php' ),
 				'nonce'      => wp_create_nonce( 'biwebp_convert' ),
-				'isPro'      => $is_pro,
 				'batchLimit'  => $this->usage->batch_limit(),
 				'maxBytes'   => $max_bytes,
 				'maxLabel'   => size_format( $max_bytes ),
 				'planMaxBytes' => $plan_max_bytes,
 				'hostMaxBytes' => $host_max_bytes,
 				'hostConstrained' => $max_bytes < $plan_max_bytes,
-				'mediaScanPageSize' => 25,
 				'pricingCatalog' => $this->pricing_catalog(),
 				'strings'    => array(
 					'processing' => __( 'Processing…', 'bulk-image-to-webp-converter' ),
@@ -81,13 +77,12 @@ class BIWEBP_Admin {
 			wp_die( esc_html__( 'You do not have permission to convert images.', 'bulk-image-to-webp-converter' ) );
 		}
 
-		$is_pro         = $this->usage->is_pro();
-		$plan_max_bytes = $this->validator->plan_max_bytes( $is_pro );
-		$max_bytes      = $this->validator->max_bytes( $is_pro );
+		$plan_max_bytes = $this->validator->plan_max_bytes();
+		$max_bytes      = $this->validator->max_bytes();
 		$max_label      = size_format( $max_bytes );
 		$plan_max_label = size_format( $plan_max_bytes );
 		$host_constrained = $max_bytes < $plan_max_bytes;
-		$upgrade_url = (string) apply_filters( 'biwebp_upgrade_url', '' );
+		$upgrade_url = (string) apply_filters( 'biwebp_upgrade_url', 'https://webp.lavenex.com/' );
 		$pricing     = $this->localized_pricing();
 		?>
 		<div class="wrap biwebp-wrap">
@@ -96,29 +91,23 @@ class BIWEBP_Admin {
 			<p class="description"><?php echo esc_html__( 'Works through the standard WordPress Media Library, so it can be used with any properly coded WordPress theme or page builder—including Elementor, WPBakery, and Gutenberg. No WooCommerce installation is required. Generated WebP files are new Media Library items; existing page content is not automatically rewritten.', 'bulk-image-to-webp-converter' ); ?></p>
 
 			<div class="biwebp-usage" aria-live="polite">
-				<strong><?php echo esc_html( $is_pro ? __( 'Pro conversions', 'bulk-image-to-webp-converter' ) : __( 'Free conversions', 'bulk-image-to-webp-converter' ) ); ?></strong>
+				<strong><?php echo esc_html__( 'Free conversions', 'bulk-image-to-webp-converter' ); ?></strong>
 				<span id="biwebp-usage-count"><?php echo esc_html__( 'Unlimited', 'bulk-image-to-webp-converter' ); ?></span>
 				<span id="biwebp-remaining"><?php /* translators: %d: Maximum images allowed in one safety batch. */ echo esc_html( sprintf( __( 'Process up to %d images per safe batch', 'bulk-image-to-webp-converter' ), $this->usage->batch_limit() ) ); ?></span>
 			</div>
-			<?php if ( ! $is_pro ) : ?>
-				<section class="biwebp-pro-offer" id="biwebp-pro-upgrade" aria-labelledby="biwebp-pro-offer-title">
+			<section class="biwebp-pro-offer" id="biwebp-pro-upgrade" aria-labelledby="biwebp-pro-offer-title">
 					<div class="biwebp-pro-offer-copy">
 						<span class="biwebp-pro-badge"><?php echo esc_html__( 'LOCAL PRICE', 'bulk-image-to-webp-converter' ); ?> · <span id="biwebp-price-country"><?php echo esc_html( $pricing['country_label'] ); ?></span></span>
 						<h2 id="biwebp-pro-offer-title"><?php echo esc_html__( 'Convert every image with WebP Pro', 'bulk-image-to-webp-converter' ); ?></h2>
-						<p><?php echo esc_html__( 'Add one-click Media Library conversion, smart suggestions, larger safe batches, up to 25 MB per image, and premium support—using the same high-quality local pipeline.', 'bulk-image-to-webp-converter' ); ?></p>
+						<p><?php echo esc_html__( 'A separately distributed WebP Pro add-on offers Media Library automation, larger safety batches, up to 25 MB per image, updates, and premium support. No Pro code or locked functionality is included in this Free plugin.', 'bulk-image-to-webp-converter' ); ?></p>
 					</div>
 					<div class="biwebp-pro-offer-price">
 						<strong class="biwebp-monthly-price"><span id="biwebp-monthly-price"><?php echo esc_html( $pricing['monthly'] ); ?></span> <span><?php echo esc_html__( '/ month', 'bulk-image-to-webp-converter' ); ?></span></strong>
 						<small class="biwebp-yearly-price"><span id="biwebp-yearly-price"><?php echo esc_html( $pricing['yearly'] ); ?></span><?php echo esc_html__( '/year · 1 site · save with yearly billing', 'bulk-image-to-webp-converter' ); ?></small>
 						<small class="biwebp-local-price-note"><?php echo esc_html__( 'Localized from the site country/locale; checkout confirms the final price.', 'bulk-image-to-webp-converter' ); ?></small>
-						<?php if ( '' !== $upgrade_url ) : ?>
-							<a class="button button-primary biwebp-upgrade-button" href="<?php echo esc_url( $upgrade_url ); ?>"><?php echo esc_html__( 'Upgrade to Pro', 'bulk-image-to-webp-converter' ); ?></a>
-						<?php else : ?>
-							<span class="button button-primary biwebp-upgrade-button" aria-label="<?php echo esc_attr__( 'Upgrade checkout coming soon', 'bulk-image-to-webp-converter' ); ?>"><?php echo esc_html__( 'Upgrade to Pro · Coming soon', 'bulk-image-to-webp-converter' ); ?></span>
-						<?php endif; ?>
+						<a class="button button-primary biwebp-upgrade-button" href="<?php echo esc_url( $upgrade_url ); ?>"><?php echo esc_html__( 'Learn about WebP Pro', 'bulk-image-to-webp-converter' ); ?></a>
 					</div>
-				</section>
-			<?php endif; ?>
+			</section>
 
 			<div class="biwebp-panel">
 				<div class="biwebp-hero-grid">
@@ -148,26 +137,6 @@ class BIWEBP_Admin {
 					<button type="button" class="button" id="biwebp-media-library"><?php echo esc_html__( 'Choose from Media Library', 'bulk-image-to-webp-converter' ); ?></button>
 					<span id="biwebp-media-selection" aria-live="polite"></span>
 				</div>
-				<?php if ( $is_pro ) : ?>
-					<section class="biwebp-pro-media" aria-labelledby="biwebp-pro-media-title">
-						<div>
-							<span class="biwebp-pro-media-badge"><?php echo esc_html__( 'PRO MEDIA ASSISTANT', 'bulk-image-to-webp-converter' ); ?></span>
-							<h2 id="biwebp-pro-media-title"><?php echo esc_html__( 'Convert your Media Library faster', 'bulk-image-to-webp-converter' ); ?></h2>
-							<p><?php echo esc_html__( 'Finds eligible PNG/JPEG originals that do not already have a WebP generated by this plugin. Originals remain untouched and processing stays sequential.', 'bulk-image-to-webp-converter' ); ?></p>
-						</div>
-						<div class="biwebp-pro-media-actions">
-							<button type="button" class="button button-secondary" id="biwebp-scan-media"><?php echo esc_html__( 'Find suggested media', 'bulk-image-to-webp-converter' ); ?></button>
-							<button type="button" class="button button-primary" id="biwebp-convert-all-media"><?php echo esc_html__( 'Convert all eligible media', 'bulk-image-to-webp-converter' ); ?></button>
-						</div>
-						<p id="biwebp-media-scan-summary" class="biwebp-media-scan-summary" role="status" aria-live="polite"><?php echo esc_html__( 'Run a scan to see smart suggestions.', 'bulk-image-to-webp-converter' ); ?></p>
-						<div id="biwebp-media-suggestions" class="biwebp-media-suggestions" hidden>
-							<label><input type="checkbox" id="biwebp-select-all-suggestions" checked> <?php echo esc_html__( 'Select all displayed suggestions', 'bulk-image-to-webp-converter' ); ?></label>
-							<ul id="biwebp-media-suggestion-list" aria-label="<?php echo esc_attr__( 'Suggested Media Library images', 'bulk-image-to-webp-converter' ); ?>"></ul>
-							<button type="button" class="button button-secondary" id="biwebp-queue-suggestions"><?php echo esc_html__( 'Convert selected suggestions', 'bulk-image-to-webp-converter' ); ?></button>
-						</div>
-					</section>
-				<?php endif; ?>
-
 				<div class="biwebp-controls">
 					<label for="biwebp-quality"><?php echo esc_html__( 'WebP quality', 'bulk-image-to-webp-converter' ); ?></label>
 					<input id="biwebp-quality" type="range" min="40" max="100" value="85" step="1" aria-valuetext="85 percent WebP quality">
@@ -193,7 +162,7 @@ class BIWEBP_Admin {
 						<span id="biwebp-compression-progress-bar"></span>
 					</div>
 				</div>
-				<p class="description"><?php echo esc_html__( '85% is recommended. Very large pixel dimensions depend on available browser memory and may fail safely. Free and Pro use the same output quality.', 'bulk-image-to-webp-converter' ); ?></p>
+				<p class="description"><?php echo esc_html__( '85% is recommended. Very large pixel dimensions depend on available browser memory and may fail safely. The Free edition does not intentionally reduce output quality.', 'bulk-image-to-webp-converter' ); ?></p>
 				<p class="description"><?php echo esc_html__( 'The refresh-safe queue is stored in this browser. Processing resumes when this converter page is open; local-first conversion does not continue after the browser is closed.', 'bulk-image-to-webp-converter' ); ?></p>
 				<p id="biwebp-storage-notice" class="biwebp-storage-notice" role="status" aria-live="polite" aria-atomic="true" hidden></p>
 				<p id="biwebp-message" class="biwebp-message" role="status" aria-live="polite" aria-atomic="true"></p>
@@ -281,7 +250,6 @@ class BIWEBP_Admin {
 
 		check_ajax_referer( 'biwebp_convert', 'nonce' );
 
-		$is_pro = $this->usage->is_pro();
 		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- normalize_key() sanitizes and validates this identifier against a strict allowlist.
 		$raw_job_key = isset( $_POST['jobKey'] ) ? wp_unslash( $_POST['jobKey'] ) : '';
 		$job_key     = $this->idempotency->normalize_key( $raw_job_key );
@@ -302,7 +270,7 @@ class BIWEBP_Admin {
 
 		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- The upload array is validated for errors, size, signature, decoded MIME type, and dimensions before use.
 		$file      = isset( $_FILES['webp'] ) ? wp_unslash( $_FILES['webp'] ) : array();
-		$validated = $this->validator->validate( $file, $is_pro );
+		$validated = $this->validator->validate( $file );
 		if ( is_wp_error( $validated ) ) {
 			$this->idempotency->release( $job_key );
 			wp_send_json_error( array( 'message' => $validated->get_error_message() ), 400 );
@@ -332,51 +300,6 @@ class BIWEBP_Admin {
 		$this->idempotency->store_result( $job_key, $response );
 		$this->idempotency->release( $job_key );
 		wp_send_json_success( $response );
-	}
-
-	/** Return unconverted PNG/JPEG Media Library suggestions to active Pro sites. */
-	public function scan_media() {
-		if ( ! current_user_can( 'upload_files' ) ) {
-			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'bulk-image-to-webp-converter' ) ), 403 );
-		}
-		check_ajax_referer( 'biwebp_convert', 'nonce' );
-		if ( ! $this->usage->is_pro() ) {
-			wp_send_json_error( array( 'message' => __( 'Convert All Media is available with an active Pro license.', 'bulk-image-to-webp-converter' ) ), 403 );
-		}
-
-		global $wpdb;
-		$page     = isset( $_POST['page'] ) ? max( 1, absint( $_POST['page'] ) ) : 1;
-		$per_page = 25;
-		$offset   = ( $page - 1 ) * $per_page;
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Only trusted WordPress core table names are interpolated; the query contains no user data.
-		$total_sql = "SELECT COUNT(*) FROM {$wpdb->posts} p WHERE p.post_type = 'attachment' AND p.post_status = 'inherit' AND p.post_mime_type IN ('image/png','image/jpeg') AND NOT EXISTS (SELECT 1 FROM {$wpdb->postmeta} converted WHERE converted.meta_key = '_biwebp_source_attachment_id' AND CAST(converted.meta_value AS UNSIGNED) = p.ID)";
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- This admin-only Media Library scan requires fresh results and excludes already converted sources.
-		$total = (int) $wpdb->get_var( $total_sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Fixed query assembled above from trusted core table names only.
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Only trusted WordPress core table names are interpolated; all pagination values are prepared.
-		$ids_sql = $wpdb->prepare( "SELECT p.ID FROM {$wpdb->posts} p WHERE p.post_type = 'attachment' AND p.post_status = 'inherit' AND p.post_mime_type IN ('image/png','image/jpeg') AND NOT EXISTS (SELECT 1 FROM {$wpdb->postmeta} converted WHERE converted.meta_key = '_biwebp_source_attachment_id' AND CAST(converted.meta_value AS UNSIGNED) = p.ID) ORDER BY p.post_modified_gmt DESC, p.ID DESC LIMIT %d OFFSET %d", $per_page, $offset );
-		$ids = $wpdb->get_col( $ids_sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Prepared query assembled immediately above.
-		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$items    = array();
-		foreach ( $ids as $attachment_id ) {
-			$attachment_id = absint( $attachment_id );
-			$file          = get_attached_file( $attachment_id );
-			$url           = wp_get_attachment_url( $attachment_id );
-			$mime          = get_post_mime_type( $attachment_id );
-			if ( ! $file || ! $url || ! in_array( $mime, array( 'image/png', 'image/jpeg' ), true ) || ! file_exists( $file ) ) {
-				continue;
-			}
-			$bytes  = (int) filesize( $file );
-			$reason = $bytes >= 524288 ? __( 'Large image — recommended first', 'bulk-image-to-webp-converter' ) : ( 'image/png' === $mime ? __( 'PNG optimization candidate', 'bulk-image-to-webp-converter' ) : __( 'Eligible JPEG', 'bulk-image-to-webp-converter' ) );
-			$items[] = array(
-				'id'       => $attachment_id,
-				'filename' => basename( $file ),
-				'url'      => esc_url_raw( $url ),
-				'mime'     => $mime,
-				'bytes'    => $bytes,
-				'reason'   => $reason,
-			);
-		}
-		wp_send_json_success( array( 'items' => $items, 'page' => $page, 'total' => $total, 'hasMore' => $offset + $per_page < $total ) );
 	}
 
 	/**

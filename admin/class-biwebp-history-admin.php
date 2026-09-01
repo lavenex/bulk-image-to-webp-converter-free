@@ -47,8 +47,7 @@ class BIWEBP_History_Admin {
 			wp_die( esc_html__( 'You do not have permission to view conversion history.', 'bulk-image-to-webp-converter' ) );
 		}
 
-		$is_pro    = $this->usage->is_pro();
-		$max_bytes = $this->validator->max_bytes( $is_pro );
+		$max_bytes = $this->validator->max_bytes();
 		$uploads   = wp_upload_dir( null, false );
 		$query     = new WP_Query(
 			array(
@@ -135,9 +134,9 @@ class BIWEBP_History_Admin {
 			</section>
 
 			<section class="biwebp-history-section" aria-labelledby="biwebp-diagnostics-title">
-				<div class="biwebp-diagnostics-heading"><div><h2 id="biwebp-diagnostics-title"><?php echo esc_html__( 'Conversion readiness', 'bulk-image-to-webp-converter' ); ?></h2><p><?php echo esc_html__( 'These checks contain technical environment information only—never image contents or license keys.', 'bulk-image-to-webp-converter' ); ?></p></div><button type="button" class="button button-secondary" id="biwebp-download-diagnostics"><?php echo esc_html__( 'Download support report', 'bulk-image-to-webp-converter' ); ?></button></div>
+				<div class="biwebp-diagnostics-heading"><div><h2 id="biwebp-diagnostics-title"><?php echo esc_html__( 'Conversion readiness', 'bulk-image-to-webp-converter' ); ?></h2><p><?php echo esc_html__( 'These checks contain technical environment information only—never image contents or customer personal data.', 'bulk-image-to-webp-converter' ); ?></p></div><button type="button" class="button button-secondary" id="biwebp-download-diagnostics"><?php echo esc_html__( 'Download support report', 'bulk-image-to-webp-converter' ); ?></button></div>
 				<dl class="biwebp-diagnostics" id="biwebp-diagnostics" data-plugin-version="<?php echo esc_attr( BIWEBP_VERSION ); ?>">
-					<div><dt><?php echo esc_html__( 'Plan', 'bulk-image-to-webp-converter' ); ?></dt><dd data-diagnostic="plan"><?php echo esc_html( $is_pro ? __( 'Pro', 'bulk-image-to-webp-converter' ) : __( 'Free', 'bulk-image-to-webp-converter' ) ); ?></dd></div>
+					<div><dt><?php echo esc_html__( 'Edition', 'bulk-image-to-webp-converter' ); ?></dt><dd data-diagnostic="plan"><?php echo esc_html__( 'Free', 'bulk-image-to-webp-converter' ); ?></dd></div>
 					<div><dt><?php echo esc_html__( 'Plugin limit', 'bulk-image-to-webp-converter' ); ?></dt><dd data-diagnostic="plugin-limit"><?php echo esc_html( size_format( $max_bytes ) . ' per image' ); ?></dd></div>
 					<div><dt><?php echo esc_html__( 'WordPress / PHP', 'bulk-image-to-webp-converter' ); ?></dt><dd data-diagnostic="runtime"><?php echo esc_html( get_bloginfo( 'version' ) . ' / ' . PHP_VERSION ); ?></dd></div>
 					<div><dt><?php echo esc_html__( 'Host upload limit', 'bulk-image-to-webp-converter' ); ?></dt><dd data-diagnostic="host-limit"><?php echo esc_html( size_format( wp_max_upload_size() ) ); ?></dd></div>

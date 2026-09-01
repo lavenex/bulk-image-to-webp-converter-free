@@ -40,19 +40,21 @@ jobs:
             uninstall.php
             admin/class-biwebp-converter-admin.php
             admin/class-biwebp-history-admin.php
-            admin/class-biwebp-license-admin.php
             assets/css/webp-admin.css
             assets/js/history-admin.js
             assets/js/webp-admin.js
             includes/class-biwebp-idempotency.php
-            includes/class-biwebp-license.php
             includes/class-biwebp-output-validator.php
             includes/class-biwebp-usage.php
           )
           for file in "${required[@]}"; do test -f "$file"; done
           test ! -e bulk-image-to-webp-converter-pro
           test ! -e licensing-service
+          test ! -e admin/class-biwebp-license-admin.php
+          test ! -e includes/class-biwebp-license.php
           ! grep -RIE 'github_pat_|BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|BETA_FTP_PASSWORD' . \
+            --exclude-dir=.git --exclude='*.yml'
+          ! grep -RIE 'BIWEBP_License|biwebp_is_pro|wp_ajax_biwebp_scan_media|PRO_MAX_BYTES|PRO_BATCH_LIMIT|load_plugin_textdomain' . \
             --exclude-dir=.git --exclude='*.yml'
 
       - name: Check PHP syntax
@@ -63,9 +65,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          grep -Eq '^ \* Version:[[:space:]]+0\.8\.0-alpha$' bulk-image-to-webp-converter.php
-          grep -Fq "define( 'BIWEBP_VERSION', '0.8.0-alpha' );" bulk-image-to-webp-converter.php
-          grep -Fq 'Stable tag: 0.8.0-alpha' readme.txt
+          grep -Eq '^ \* Version:[[:space:]]+0\.9\.0-alpha$' bulk-image-to-webp-converter.php
+          grep -Fq "define( 'BIWEBP_VERSION', '0.9.0-alpha' );" bulk-image-to-webp-converter.php
+          grep -Fq 'Stable tag: 0.9.0-alpha' readme.txt
           grep -Fq 'Free manual conversions are unlimited.' readme.txt
           grep -Fq 'FREE_BATCH_LIMIT = 25' includes/class-biwebp-usage.php
 
@@ -79,7 +81,7 @@ jobs:
           from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
           slug = 'bulk-image-to-webp-converter'
-          archive = Path(f'{slug}-0.8.0-alpha.zip')
+          archive = Path(f'{slug}-0.9.0-alpha.zip')
           files = sorted(
               path for path in Path('.').rglob('*')
               if path.is_file() and '.git' not in path.parts and '.github' not in path.parts
@@ -97,15 +99,15 @@ jobs:
                       compresslevel=9,
                   )
           PY
-          sha256sum bulk-image-to-webp-converter-0.8.0-alpha.zip > bulk-image-to-webp-converter-0.8.0-alpha.zip.sha256
+          sha256sum bulk-image-to-webp-converter-0.9.0-alpha.zip > bulk-image-to-webp-converter-0.9.0-alpha.zip.sha256
 
       - name: Upload beta package
         if: matrix.php == '8.3'
         uses: actions/upload-artifact@v4
         with:
-          name: bulk-image-to-webp-converter-0.8.0-alpha
+          name: bulk-image-to-webp-converter-0.9.0-alpha
           path: |
-            bulk-image-to-webp-converter-0.8.0-alpha.zip
-            bulk-image-to-webp-converter-0.8.0-alpha.zip.sha256
+            bulk-image-to-webp-converter-0.9.0-alpha.zip
+            bulk-image-to-webp-converter-0.9.0-alpha.zip.sha256
           if-no-files-found: error
           retention-days: 14

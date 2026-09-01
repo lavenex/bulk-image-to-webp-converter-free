@@ -28,13 +28,6 @@
   const monthlyPrice = document.getElementById('biwebp-monthly-price');
   const yearlyPrice = document.getElementById('biwebp-yearly-price');
   const storageNotice = document.getElementById('biwebp-storage-notice');
-  const scanMediaButton = document.getElementById('biwebp-scan-media');
-  const convertAllMediaButton = document.getElementById('biwebp-convert-all-media');
-  const mediaScanSummary = document.getElementById('biwebp-media-scan-summary');
-  const mediaSuggestions = document.getElementById('biwebp-media-suggestions');
-  const suggestionList = document.getElementById('biwebp-media-suggestion-list');
-  const selectAllSuggestions = document.getElementById('biwebp-select-all-suggestions');
-  const queueSuggestionsButton = document.getElementById('biwebp-queue-suggestions');
 
   if (!fileInput || !convertButton || !qualityInput) {
     return;
@@ -47,8 +40,6 @@
   let databasePromise;
   let queueStorageAvailable = 'indexedDB' in window;
   let previewUrls = [];
-  let suggestedMedia = [];
-  let mediaScanBusy = false;
 
   function showStorageWarning() {
     queueStorageAvailable = false;
@@ -293,7 +284,7 @@
       const preview = document.createElement('img');
       const previewSource = job.status === 'completed' && job.outputBlob ? job.outputBlob : job.file;
       const previewUrl = previewSource ? URL.createObjectURL(previewSource) :
-        (job.status === 'completed' && job.result && job.result.attachmentUrl ? job.result.attachmentUrl : job.sourceUrl);
+        (job.status === 'completed' && job.result && job.result.attachmentUrl ? job.result.attachmentUrl : '');
       if (previewSource) { previewUrls.push(previewUrl); }
       preview.src = previewUrl;
       preview.alt = (job.status === 'completed' ? 'Converted WebP preview for ' : 'Original preview for ') + jobFilename(job);
@@ -343,9 +334,6 @@
     cancelButton.disabled = counts.pending === 0;
     clearButton.disabled = counts.completed + counts.cancelled === 0;
     convertButton.disabled = busy;
-    if (scanMediaButton) { scanMediaButton.disabled = mediaScanBusy; }
-    if (convertAllMediaButton) { convertAllMediaButton.disabled = busy || mediaScanBusy; }
-    if (queueSuggestionsButton) { queueSuggestionsButton.disabled = busy || mediaScanBusy || suggestedMedia.length === 0; }
     const total = counts.pending + counts.processing + counts.completed + counts.failed;
     const processed = counts.completed + counts.failed;
     const progress = total > 0 ? Math.round(processed / total * 100) : 0;
@@ -376,14 +364,7 @@
 
   async function hydrateJobFile(job) {
     if (job.file) { return job.file; }
-    if (!job.sourceUrl) { throw new Error('The Media Library source is unavailable. Run the media scan again.'); }
-    const response = await fetch(job.sourceUrl, { credentials: 'same-origin' });
-    if (!response.ok) { throw new Error('Could not read ' + jobFilename(job) + ' from the Media Library.'); }
-    const blob = await response.blob();
-    job.file = new File([blob], job.sourceFilename, { type: job.sourceMime || blob.type });
-    job.sourceBytes = job.file.size;
-    await saveJob(job);
-    return job.file;
+    throw new Error('The original image is unavailable in this browser queue. Select it again and retry.');
   }
 
   async function convertOne(job) {
@@ -456,139 +437,6 @@
 
   async function persistAll(jobs) {
     for (const job of jobs) { await saveJob(job); }
-  }
-
-  async function scanMediaPage(page) {
-    const body = new URLSearchParams();
-    body.set('action', 'biwebp_scan_media');
-    body.set('nonce', biwebpConfig.nonce);
-    body.set('page', String(page));
-    const response = await fetch(biwebpConfig.ajaxUrl, {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
-      body: body.toString()
-    });
-    const payload = await response.json();
-    if (!response.ok || !payload.success) {
-      throw new Error(payload.data && payload.data.message ? payload.data.message : 'Could not scan the Media Library.');
-    }
-    return payload.data;
-  }
-
-  async function scanAllEligibleMedia() {
-    const found = new Map();
-    let page = 1;
-    let hasMore = true;
-    while (hasMore && page <= 400) {
-      const data = await scanMediaPage(page);
-      (data.items || []).forEach(function (item) { found.set(Number(item.id), item); });
-      hasMore = Boolean(data.hasMore);
-      if (mediaScanSummary) {
-        mediaScanSummary.textContent = 'Scanning Media Library… ' + found.size + ' eligible image(s) found.';
-      }
-      page += 1;
-    }
-    if (hasMore) {
-      throw new Error('The Media Library scan reached its safety boundary. Convert these images, then scan again.');
-    }
-    return Array.from(found.values()).sort(function (a, b) { return Number(b.bytes) - Number(a.bytes); });
-  }
-
-  function renderMediaSuggestions() {
-    if (!mediaSuggestions || !suggestionList || !mediaScanSummary) { return; }
-    suggestionList.replaceChildren();
-    const displayed = suggestedMedia.slice(0, 100);
-    displayed.forEach(function (item) {
-      const row = document.createElement('li');
-      const label = document.createElement('label');
-      const checkbox = document.createElement('input');
-      checkbox.type = 'checkbox';
-      checkbox.checked = true;
-      checkbox.dataset.attachmentId = String(item.id);
-      const copy = document.createElement('span');
-      const name = document.createElement('strong');
-      const reason = document.createElement('small');
-      name.textContent = item.filename;
-      reason.textContent = item.reason + ' · ' + humanSize(Number(item.bytes));
-      copy.append(name, reason);
-      label.append(checkbox, copy);
-      row.append(label);
-      suggestionList.append(row);
-    });
-    mediaSuggestions.hidden = suggestedMedia.length === 0;
-    if (selectAllSuggestions) { selectAllSuggestions.checked = displayed.length > 0; }
-    mediaScanSummary.textContent = suggestedMedia.length ?
-      suggestedMedia.length + ' eligible image(s) found. Larger files are suggested first.' + (suggestedMedia.length > displayed.length ? ' Showing the first 100 for review; Convert all includes every eligible image.' : '') :
-      'No eligible PNG/JPEG originals need conversion. Images already converted by this plugin were skipped.';
-    updateControls();
-  }
-
-  function makeRemoteJob(item) {
-    return {
-      id: newJobId(),
-      file: null,
-      sourceAttachmentId: Number(item.id),
-      sourceUrl: item.url,
-      sourceFilename: item.filename,
-      sourceMime: item.mime,
-      sourceBytes: Number(item.bytes),
-      quality: Number(qualityInput.value),
-      status: 'pending',
-      error: '',
-      createdAt: Date.now() + Math.random()
-    };
-  }
-
-  async function queueRemoteAttachments(attachments) {
-    const alreadyQueued = new Set(queueJobs.map(function (job) { return Number(job.sourceAttachmentId || 0); }).filter(Boolean));
-    const additions = attachments.filter(function (item) { return !alreadyQueued.has(Number(item.id)); }).map(makeRemoteJob);
-    if (!additions.length) {
-      setMessage('All selected Media Library images are already in this queue.', false);
-      return;
-    }
-    queueJobs = queueJobs.concat(additions);
-    try { await persistAll(additions); } catch (error) { showStorageWarning(); }
-    queuePaused = false;
-    renderQueue();
-    setMessage(additions.length + ' Media Library image(s) queued. Processing locally, one image at a time.', false);
-    processQueue();
-  }
-
-  async function runMediaScan(convertAll) {
-    if (mediaScanBusy || busy) { return; }
-    mediaScanBusy = true;
-    updateControls();
-    if (mediaScanSummary) { mediaScanSummary.textContent = 'Scanning Media Library…'; }
-    try {
-      suggestedMedia = await scanAllEligibleMedia();
-      renderMediaSuggestions();
-      if (convertAll && suggestedMedia.length) { await queueRemoteAttachments(suggestedMedia); }
-    } catch (error) {
-      if (mediaScanSummary) { mediaScanSummary.textContent = error.message; }
-      setMessage(error.message, true);
-    } finally {
-      mediaScanBusy = false;
-      updateControls();
-    }
-  }
-
-  if (scanMediaButton) {
-    scanMediaButton.addEventListener('click', function () { runMediaScan(false); });
-  }
-  if (convertAllMediaButton) {
-    convertAllMediaButton.addEventListener('click', function () { runMediaScan(true); });
-  }
-  if (selectAllSuggestions && suggestionList) {
-    selectAllSuggestions.addEventListener('change', function () {
-      suggestionList.querySelectorAll('input[type="checkbox"]').forEach(function (checkbox) { checkbox.checked = selectAllSuggestions.checked; });
-    });
-  }
-  if (queueSuggestionsButton && suggestionList) {
-    queueSuggestionsButton.addEventListener('click', function () {
-      const selectedIds = new Set(Array.from(suggestionList.querySelectorAll('input[type="checkbox"]:checked')).map(function (checkbox) { return Number(checkbox.dataset.attachmentId); }));
-      queueRemoteAttachments(suggestedMedia.filter(function (item) { return selectedIds.has(Number(item.id)); }));
-    });
   }
 
   qualityInput.addEventListener('input', function () {

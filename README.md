@@ -1,12 +1,22 @@
-# Bulk Image to WebP Converter — WordPress plugin source
+# Bulk Image to WebP Converter — Free
 
-This folder is reserved for the installable WordPress plugin.
+This directory is the complete WordPress.org Free plugin. It converts manually selected PNG/JPG/JPEG images to WebP locally in the administrator's browser and saves successful results as new Media Library attachments.
 
-- `admin/` — admin screens and workflows
-- `includes/` — WebP validation, usage, queue, and licensing classes
-- `assets/css/` — admin styles
-- `assets/js/` — upload, queue, progress, and preview scripts
-- `languages/` — translation template and language files
-- `tests/` — automated plugin tests
+The Free package is fully functional: unlimited manual conversions, repeatable 25-image safety batches, up to 10 MB per image subject to host limits, full quality control, Media Library selection and saving, refresh-safe queue controls, progress, history, diagnostics, and original-file preservation.
 
-The V1 alpha converts new PNG/JPG/JPEG files or existing Media Library attachments locally in the administrator's browser, validates the generated WebP on the same WordPress site, and saves it as a new Media Library attachment without altering the source image. Free manual conversions are unlimited, support up to 10 MB per image, and use a 25-image safety boundary per active batch. Pro supports 25 MB per image, larger safe batches, smart Media Library suggestions, and one-click eligible-media conversion. There is no fixed pixel-dimension ceiling. The read-only History & Diagnostics screen shows recent generated-file savings, source/output links, host limits, browser/queue readiness, and a privacy-safe support report. The plugin has no required e-commerce, page-builder, or theme dependency. It includes a lavender License screen showing plan, status, bound site, and expiry, plus activate, refresh, and deactivate controls. These controls fail closed and remain disabled until the separately distributed private Pro connector is installed and configured. The converter core never stores or displays a raw license key. Generated WebP attachments can be used with properly coded themes and builders such as Elementor, WPBakery, and Gutenberg but do not automatically rewrite existing page content.
+No license system, entitlement check, premium implementation, daily quota, trial, or locked feature code is included. Any separately distributed commercial add-on is a different GPL-compatible plugin hosted outside WordPress.org.
+
+## Structure
+
+- `admin/` — converter and read-only history/diagnostics screens
+- `assets/` — local administrator CSS and JavaScript
+- `includes/` — unlimited Free usage, output validation, and retry/idempotency helpers
+- `uninstall.php` — removes only temporary plugin-owned queue state; media is preserved
+
+## Development
+
+The distributed JavaScript and CSS are human-readable and are not minified or obfuscated. The maintained public source is available at:
+
+https://github.com/lavenex/bulk-image-to-webp-converter-free
+
+Plugin version: `0.9.0-alpha`.

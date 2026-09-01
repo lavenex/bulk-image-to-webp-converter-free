@@ -5,26 +5,23 @@ defined( 'ABSPATH' ) || exit;
 
 class BIWEBP_Validator {
 	const FREE_MAX_BYTES = 10485760;
-	const PRO_MAX_BYTES  = 26214400;
 
 	/**
 	 * Return the active per-image input/output ceiling.
 	 *
-	 * @param bool $is_pro Whether Pro entitlement is active.
 	 * @return int
 	 */
-	public function plan_max_bytes( $is_pro ) {
-		return $is_pro ? self::PRO_MAX_BYTES : self::FREE_MAX_BYTES;
+	public function plan_max_bytes() {
+		return self::FREE_MAX_BYTES;
 	}
 
 	/**
 	 * Return the lower of the plan ceiling and the current WordPress host limit.
 	 *
-	 * @param bool $is_pro Whether Pro entitlement is active.
 	 * @return int
 	 */
-	public function max_bytes( $is_pro ) {
-		$plan_max = $this->plan_max_bytes( $is_pro );
+	public function max_bytes() {
+		$plan_max = $this->plan_max_bytes();
 		$host_max = function_exists( 'wp_max_upload_size' ) ? (int) wp_max_upload_size() : 0;
 
 		return $host_max > 0 ? min( $plan_max, $host_max ) : $plan_max;
@@ -36,7 +33,7 @@ class BIWEBP_Validator {
 	 * @param array $file A normalized entry from $_FILES.
 	 * @return array|WP_Error
 	 */
-	public function validate( $file, $is_pro = false ) {
+	public function validate( $file ) {
 		if ( ! is_array( $file ) || empty( $file['tmp_name'] ) ) {
 			return new WP_Error( 'biwebp_missing_file', __( 'The generated WebP file is missing.', 'bulk-image-to-webp-converter' ) );
 		}
@@ -47,7 +44,7 @@ class BIWEBP_Validator {
 		}
 
 		$size      = isset( $file['size'] ) ? (int) $file['size'] : 0;
-		$max_bytes = $this->max_bytes( $is_pro );
+		$max_bytes = $this->max_bytes();
 		if ( $size <= 0 || $size > $max_bytes ) {
 			$limit = function_exists( 'size_format' ) ? size_format( $max_bytes ) : (string) $max_bytes . ' bytes';
 			/* translators: %s: Formatted maximum generated WebP size. */

@@ -34,7 +34,7 @@
       diagnostics.querySelectorAll('[data-diagnostic]').forEach(function (item) {
         lines.push(item.dataset.diagnostic + ': ' + item.textContent.trim());
       });
-      lines.push('Privacy: no image contents, filenames, license keys, or customer personal data are included.');
+      lines.push('Privacy: no image contents, filenames, or customer personal data are included.');
       const url = URL.createObjectURL(new Blob([lines.join('\n') + '\n'], { type: 'text/plain' }));
       const link = document.createElement('a');
       link.href = url;

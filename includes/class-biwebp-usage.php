@@ -1,22 +1,10 @@
 <?php
-/**
- * Distribution-plan compatibility and entitlement handling.
- */
+/** Unlimited manual Free usage with a repeatable safety-batch boundary. */
 
 defined( 'ABSPATH' ) || exit;
 
 class BIWEBP_Usage {
 	const FREE_BATCH_LIMIT = 25;
-	const PRO_BATCH_LIMIT  = 100;
-
-	/**
-	 * Whether a separately installed Pro edition has enabled Pro mode.
-	 *
-	 * @return bool
-	 */
-	public function is_pro() {
-		return (bool) apply_filters( 'biwebp_is_pro', false );
-	}
 
 	/**
 	 * Return a compatibility usage record for older integrations.
@@ -55,6 +43,6 @@ class BIWEBP_Usage {
 	 * @return int
 	 */
 	public function batch_limit() {
-		return $this->is_pro() ? self::PRO_BATCH_LIMIT : self::FREE_BATCH_LIMIT;
+		return self::FREE_BATCH_LIMIT;
 	}
 }
