@@ -68,7 +68,7 @@ jobs:
           grep -Eq '^ \* Version:[[:space:]]+0\.9\.0-alpha$' bulk-image-to-webp-converter.php
           grep -Fq "define( 'BIWEBP_VERSION', '0.9.0-alpha' );" bulk-image-to-webp-converter.php
           grep -Fq 'Stable tag: 0.9.0-alpha' readme.txt
-          grep -Fq 'Free manual conversions are unlimited.' readme.txt
+          grep -Fq 'Manual Free conversions are unlimited.' readme.txt
           grep -Fq 'FREE_BATCH_LIMIT = 25' includes/class-biwebp-usage.php
 
       - name: Build checksumed beta package
@@ -111,3 +111,4 @@ jobs:
             bulk-image-to-webp-converter-0.9.0-alpha.zip.sha256
           if-no-files-found: error
           retention-days: 14
+
