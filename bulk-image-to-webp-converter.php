@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name:       Bulk Image to WebP Converter
- * Plugin URI:        https://webp.lavenex.com/
+ * Plugin URI:        https://lavenex.com/
  * Description:       Convert PNG and JPG/JPEG images into lightweight WebP files in bulk.
  * Version:           0.9.0-alpha
  * Requires at least: 6.4

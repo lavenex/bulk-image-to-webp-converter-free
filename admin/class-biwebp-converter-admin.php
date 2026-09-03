@@ -82,7 +82,7 @@ class BIWEBP_Admin {
 		$max_label      = size_format( $max_bytes );
 		$plan_max_label = size_format( $plan_max_bytes );
 		$host_constrained = $max_bytes < $plan_max_bytes;
-		$upgrade_url = (string) apply_filters( 'biwebp_upgrade_url', 'https://webp.lavenex.com/' );
+		$upgrade_url = (string) apply_filters( 'biwebp_upgrade_url', 'https://lavenex.com/' );
 		$pricing     = $this->localized_pricing();
 		?>
 		<div class="wrap biwebp-wrap">
